@@ -359,14 +359,23 @@ function renderPacks(){
  v.querySelectorAll('[data-p]').forEach(e=>e.onclick=()=>{selPack=e.dataset.p;renderPacks()});
  v.querySelectorAll('[data-cd]').forEach(e=>e.onclick=()=>{upd();p.categories.splice(e.dataset.cd,1);savePacks();renderPacks()});
  v.querySelectorAll('.grip').forEach(g=>g.onpointerdown=e=>{
-  e.preventDefault();const el=g.closest('.cat');el.classList.add('drag');try{g.setPointerCapture(e.pointerId)}catch{}
-  const move=ev=>{
-   if(ev.clientY<80)scrollBy(0,-14);else if(ev.clientY>innerHeight-80)scrollBy(0,14);
-   for(const o of v.querySelectorAll('.cat')){if(o===el)continue;const b=o.getBoundingClientRect();
-    if(ev.clientY>b.top&&ev.clientY<b.bottom){ev.clientY<b.top+b.height/2?o.before(el):o.after(el);break}}};
-  const up=()=>{g.removeEventListener('pointermove',move);g.removeEventListener('pointerup',up);g.removeEventListener('pointercancel',up);el.classList.remove('drag');
-   upd();p.categories=[...v.querySelectorAll('.cat')].map(x=>p.categories[+x.dataset.idx]);savePacks();renderPacks()};
-  g.addEventListener('pointermove',move);g.addEventListener('pointerup',up);g.addEventListener('pointercancel',up)});
+  e.preventDefault();
+  const cats=[...v.querySelectorAll('.cat')],el=g.closest('.cat'),from=cats.indexOf(el);
+  const tops=cats.map(x=>x.getBoundingClientRect().top+scrollY),hs=cats.map(x=>x.offsetHeight+10);
+  const startY=e.clientY+scrollY,h=hs[from];let to=from,lastY=e.clientY;
+  el.classList.add('drag');cats.forEach(x=>{if(x!==el)x.style.transition='transform .18s'});
+  const upd2=()=>{
+   const dy=lastY+scrollY-startY;el.style.transform=`translateY(${dy}px)`;
+   const mid=tops[from]+dy+el.offsetHeight/2;to=from;
+   cats.forEach((o,k)=>{if(k===from)return;const m=tops[k]+o.offsetHeight/2;if(k>from&&mid>m)to=Math.max(to,k);if(k<from&&mid<m)to=Math.min(to,k)});
+   cats.forEach((o,k)=>{if(k===from)return;o.style.transform=(k>from&&k<=to)?`translateY(${-h}px)`:(k<from&&k>=to)?`translateY(${h}px)`:''});
+  };
+  const move=ev=>{lastY=ev.clientY;if(lastY<70)scrollBy(0,-16);else if(lastY>innerHeight-70)scrollBy(0,16);upd2()};
+  const up=()=>{
+   removeEventListener('pointermove',move);removeEventListener('pointerup',up);removeEventListener('pointercancel',up);removeEventListener('scroll',upd2);
+   upd();const [m]=p.categories.splice(from,1);p.categories.splice(to,0,m);savePacks();renderPacks()};
+  addEventListener('pointermove',move);addEventListener('pointerup',up);addEventListener('pointercancel',up);addEventListener('scroll',upd2);
+ });
  $('#ac').onclick=()=>{upd();p.categories.push({name:'Новая категория',items:[]});savePacks();renderPacks()};
  $('#np').onclick=()=>{const n={id:uid(),name:'Мой пак',catastrophe:'',bunker:'',categories:[{name:'Профессия',items:[]},{name:'Здоровье',items:[]}],events:[]};packs.push(n);selPack=n.id;savePacks();renderPacks()};
  $('#dp').onclick=()=>{upd();const n=structuredClone(p);n.id=uid();n.name+=' (копия)';packs.push(n);selPack=n.id;savePacks();renderPacks()};
