@@ -65,6 +65,9 @@ h2,h3{margin:0 0 8px}
 .pk:hover{transform:translateX(4px)}.pk.sel{outline:2px solid var(--acc)}
 .cat{background:var(--panel2);border-radius:8px;padding:10px;margin:10px 0}
 .hide{display:none!important}
+.grip{cursor:grab;font-size:22px;line-height:1;padding:4px 8px;touch-action:none;user-select:none;color:var(--mut);border-radius:6px}
+.grip:hover{color:var(--acc);background:var(--panel)}
+.cat.drag{outline:2px dashed var(--acc);opacity:.85;box-shadow:0 8px 24px rgba(0,0,0,.5);position:relative;z-index:2}
 .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 .chip{background:var(--panel2);border:1px solid #3a414c;border-radius:10px;padding:5px 11px;font-size:14px}
 .chip b{color:var(--acc)}
@@ -341,7 +344,7 @@ function renderPacks(){
   <label>Дополнительные вещи в бункере (по одной в строке)</label><textarea id="pi">${esc(((p.info||{}).items||[]).join('\n'))}</textarea>
   <h3 style="margin-top:18px">Категории карточек</h3>
   <small style="color:var(--mut)">Каждый игрок получает по одному случайному варианту из каждой категории. Варианты — по одному в строке. До 12 категорий, до 200 вариантов.</small>
-  ${p.categories.map((c,i)=>`<div class="cat"><div class="row"><input type="text" data-cn="${i}" value="${esc(c.name)}" style="flex:1"><button class="dng" data-cd="${i}">✕</button></div>
+  ${p.categories.map((c,i)=>`<div class="cat" data-idx="${i}"><div class="row"><span class="grip" title="Перетащить">⠿</span><input type="text" data-cn="${i}" value="${esc(c.name)}" style="flex:1"><button class="dng" data-cd="${i}">✕</button></div>
    <textarea data-ci="${i}" placeholder="Один вариант в строке">${esc(c.items.join('\n'))}</textarea></div>`).join('')}
   <button id="ac">+ Категория</button>
   <h3 style="margin-top:18px">События</h3><small style="color:var(--mut)">Ведущий запускает случайное событие кнопкой. По одному в строке.</small>
@@ -355,6 +358,15 @@ function renderPacks(){
  $('#pn').addEventListener('change',renderPacks);
  v.querySelectorAll('[data-p]').forEach(e=>e.onclick=()=>{selPack=e.dataset.p;renderPacks()});
  v.querySelectorAll('[data-cd]').forEach(e=>e.onclick=()=>{upd();p.categories.splice(e.dataset.cd,1);savePacks();renderPacks()});
+ v.querySelectorAll('.grip').forEach(g=>g.onpointerdown=e=>{
+  e.preventDefault();const el=g.closest('.cat');el.classList.add('drag');try{g.setPointerCapture(e.pointerId)}catch{}
+  const move=ev=>{
+   if(ev.clientY<80)scrollBy(0,-14);else if(ev.clientY>innerHeight-80)scrollBy(0,14);
+   for(const o of v.querySelectorAll('.cat')){if(o===el)continue;const b=o.getBoundingClientRect();
+    if(ev.clientY>b.top&&ev.clientY<b.bottom){ev.clientY<b.top+b.height/2?o.before(el):o.after(el);break}}};
+  const up=()=>{g.removeEventListener('pointermove',move);g.removeEventListener('pointerup',up);g.removeEventListener('pointercancel',up);el.classList.remove('drag');
+   upd();p.categories=[...v.querySelectorAll('.cat')].map(x=>p.categories[+x.dataset.idx]);savePacks();renderPacks()};
+  g.addEventListener('pointermove',move);g.addEventListener('pointerup',up);g.addEventListener('pointercancel',up)});
  $('#ac').onclick=()=>{upd();p.categories.push({name:'Новая категория',items:[]});savePacks();renderPacks()};
  $('#np').onclick=()=>{const n={id:uid(),name:'Мой пак',catastrophe:'',bunker:'',categories:[{name:'Профессия',items:[]},{name:'Здоровье',items:[]}],events:[]};packs.push(n);selPack=n.id;savePacks();renderPacks()};
  $('#dp').onclick=()=>{upd();const n=structuredClone(p);n.id=uid();n.name+=' (копия)';packs.push(n);selPack=n.id;savePacks();renderPacks()};
