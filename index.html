@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0e1013">
+<title>Бункер онлайн</title>
+<style>
+:root{--bg:#101215;--panel:#1b1f25;--panel2:#262b33;--tx:#e8e8e8;--mut:#8b93a0;--acc:#f0a81a;--red:#e0524d;--grn:#4fc16b}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.45 system-ui,Segoe UI,sans-serif;min-height:100vh;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:-20%;z-index:-1;background:radial-gradient(circle at 30% 20%,rgba(240,168,26,.10),transparent 45%),radial-gradient(circle at 80% 80%,rgba(224,82,77,.08),transparent 45%);animation:drift 14s ease-in-out infinite alternate}
+@keyframes drift{to{transform:translate(4%,3%) scale(1.1)}}
+header{display:flex;gap:8px;align-items:center;padding:10px 16px;background:rgba(10,12,14,.9);backdrop-filter:blur(6px);border-bottom:2px solid var(--acc);position:sticky;top:0;z-index:20}
+header h1{margin:0 auto 0 0;font-size:19px;letter-spacing:3px;color:var(--acc);cursor:pointer}
+header h1 span{display:inline-block;animation:spin 8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+button,select,input,textarea{font:inherit;color:var(--tx);background:var(--panel2);border:1px solid #3a414c;border-radius:8px;padding:8px 12px;outline:none;transition:border-color .15s,background .15s,transform .1s,box-shadow .2s}
+button{cursor:pointer}button:hover:not(:disabled){border-color:var(--acc)}button:active:not(:disabled){transform:scale(.94)}
+button:disabled{opacity:.4;cursor:default}
+input:focus,textarea:focus,select:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(240,168,26,.18)}
+button.pri{background:var(--acc);color:#111;border-color:var(--acc);font-weight:700}
+button.pri:hover:not(:disabled){box-shadow:0 0 18px rgba(240,168,26,.5)}
+button.dng{border-color:var(--red);color:var(--red)}
+button.on{background:var(--acc);color:#111;border-color:var(--acc)}
+button.big{padding:13px 20px;font-size:17px}
+textarea{width:100%;resize:vertical;min-height:80px}
+input[type=text],input[type=number],select{width:100%}
+main{max-width:1150px;margin:0 auto;padding:16px 16px 110px}
+.box{background:var(--panel);border-radius:12px;padding:16px;margin-bottom:14px;border:1px solid #262c34}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.sp{margin-left:auto}
+label{display:block;color:var(--mut);font-size:13px;margin:10px 0 4px}
+h2,h3{margin:0 0 8px}
+.lore{border-left:4px solid var(--acc);padding:4px 12px;margin:8px 0;white-space:pre-wrap}
+.lore b{color:var(--acc)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;perspective:900px}
+.card{position:relative;background:var(--panel);border-radius:12px;padding:12px;border:2px solid #2b323b;transition:border-color .3s,opacity .5s,filter .5s}
+.card.me{border-color:var(--acc);box-shadow:0 0 22px rgba(240,168,26,.15)}
+.card.out{opacity:.5;filter:grayscale(.8);border-color:var(--red)}
+.card .nm{font-weight:700;font-size:16px;display:flex;align-items:center;gap:7px;margin-bottom:6px}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--grn);flex:none}.dot.off{background:#555}
+.attr{display:flex;justify-content:space-between;align-items:center;gap:8px;background:var(--panel2);border-radius:8px;padding:6px 10px;margin:5px 0;min-height:36px;transform-origin:top}
+.attr small{color:var(--mut);white-space:nowrap}
+.attr.hid{border:1px dashed #444}.attr.hid .v{color:#555;letter-spacing:4px}
+.attr.mine .v{color:var(--tx)}
+.attr .eye{padding:3px 9px;font-size:12px}
+.attr.opened{border-left:3px solid var(--acc)}
+.tag{display:inline-block;padding:3px 10px;border-radius:12px;background:var(--panel2);color:var(--mut);font-size:12px}
+.tag.hl{background:var(--acc);color:#111;font-weight:700}
+.ev{font-size:17px;padding:12px 14px;background:#3a2a10;border:1px solid var(--acc);border-radius:10px;margin-top:10px}
+.win{background:#12301a;border-color:var(--grn)}
+.stamp{position:absolute;top:38%;left:50%;margin-left:-70px;width:140px;text-align:center;border:3px solid var(--red);color:var(--red);font-weight:900;font-size:22px;letter-spacing:3px;padding:2px 0;border-radius:6px;transform:rotate(-14deg);pointer-events:none;background:rgba(16,18,21,.6)}
+.vbtn{width:100%;margin-top:6px}
+.vbtn.sel{background:var(--red);border-color:var(--red);color:#fff}
+.bar{height:22px;background:var(--panel2);border-radius:6px;overflow:hidden;margin:4px 0;position:relative}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--acc),var(--red));animation:grow .9s ease-out both}
+.bar span{position:absolute;left:8px;top:1px;font-size:13px}
+.code{font-size:34px;letter-spacing:8px;font-weight:800;color:var(--acc);cursor:pointer;user-select:all}
+.pl{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--panel2);border-radius:8px;margin:5px 0}
+.dock{position:fixed;left:0;right:0;bottom:0;z-index:15;padding:10px 14px;background:rgba(10,12,14,.94);border-top:1px solid #333;display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.packs{display:grid;grid-template-columns:230px 1fr;gap:14px}
+@media(max-width:760px){.packs{grid-template-columns:1fr}}
+.pk{padding:9px 11px;border-radius:8px;cursor:pointer;background:var(--panel2);margin-bottom:6px;transition:transform .15s}
+.pk:hover{transform:translateX(4px)}.pk.sel{outline:2px solid var(--acc)}
+.cat{background:var(--panel2);border-radius:8px;padding:10px;margin:10px 0}
+.hide{display:none!important}
+#toasts{position:fixed;top:60px;left:50%;transform:translateX(-50%);z-index:50;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
+.toast{background:#0b0d10;border:1px solid var(--acc);border-radius:10px;padding:9px 16px;animation:toast 3.4s ease both;max-width:92vw}
+.toast.err{border-color:var(--red)}
+.conn{position:fixed;top:56px;right:10px;z-index:30;background:var(--red);padding:3px 10px;border-radius:10px;font-size:12px;animation:blink 1s infinite}
+@keyframes blink{50%{opacity:.4}}
+/* анимации */
+@keyframes pop{from{opacity:0;transform:translateY(18px) scale(.94)}to{opacity:1;transform:none}}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes flip{0%{transform:rotateX(90deg);opacity:0;background:var(--acc)}60%{transform:rotateX(-14deg);opacity:1}100%{transform:none}}
+@keyframes stamp{from{transform:rotate(-14deg) scale(3.2);opacity:0}60%{transform:rotate(-14deg) scale(.9);opacity:1}to{transform:rotate(-14deg) scale(1);opacity:1}}
+@keyframes shake{0%,100%{transform:none}15%{transform:translateX(-9px) rotate(-1deg)}35%{transform:translateX(8px) rotate(1deg)}55%{transform:translateX(-6px)}75%{transform:translateX(4px)}}
+@keyframes grow{from{width:0}}
+@keyframes toast{0%{opacity:0;transform:translateY(-14px)}10%,85%{opacity:1;transform:none}100%{opacity:0;transform:translateY(-8px)}}
+@keyframes slide{from{opacity:0;transform:translateX(-30px)}to{opacity:1;transform:none}}
+@keyframes glow{0%,100%{box-shadow:0 0 0 rgba(79,193,107,0)}50%{box-shadow:0 0 28px rgba(79,193,107,.5)}}
+@keyframes pulse{50%{transform:scale(1.04)}}
+.pop{animation:pop .5s cubic-bezier(.2,.9,.3,1.15) both;animation-delay:calc(var(--i,0)*70ms)}
+.fade{animation:fade .35s ease both}
+.flip{animation:flip .75s ease both}
+.stampin{animation:stamp .55s cubic-bezier(.3,1.5,.5,1) both}
+.shake{animation:shake .6s}
+.slide{animation:slide .45s ease both}
+.glow{animation:glow 2s ease-in-out 3}
+.pulse{animation:pulse 1.2s ease-in-out infinite}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+<header>
+  <h1 id="logo"><span>☢</span> БУНКЕР</h1>
+  <button id="tHome" class="on">Игра</button>
+  <button id="tPacks">Паки</button>
+</header>
+<div id="conn" class="conn hide">нет связи…</div>
+<div id="toasts"></div>
+<main><section id="vApp"></section><section id="vPacks" class="hide"></section></main>
+
+<script>
+const $=(s,e=document)=>e.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>Math.random().toString(36).slice(2,9);
+const lines=t=>t.split('\n').map(s=>s.trim()).filter(Boolean);
+
+/* ---------- стандартный пак ---------- */
+const DEFAULT_PACK={id:'default',name:'Классика: Ядерная зима',
+ catastrophe:'Ядерная война. Поверхность непригодна для жизни минимум 10 лет.',
+ bunker:'Бывший военный бункер: запасы еды на 2 года, генератор, фильтры воды, медпункт. Мало места — выживут не все.',
+ categories:[
+ {name:'Профессия',items:['Хирург','Повар','Электрик','Учитель','Фермер','Программист','Военный','Психолог','Инженер','Блогер','Юрист','Священник','Механик','Биолог']},
+ {name:'Здоровье',items:['Абсолютно здоров','Астма','Диабет','Аллергия на пыль','Слабое зрение','Бесплодие','Отличный иммунитет','Хроническая бессонница']},
+ {name:'Хобби',items:['Рыбалка','Шахматы','Гитара','Садоводство','Йога','Скалолазание','Вязание','Видеоигры']},
+ {name:'Багаж',items:['Аптечка','Набор инструментов','Семена растений','Рация','Ящик консервов','Ружьё','Книга по выживанию','Колода карт']},
+ {name:'Факт',items:['Боится замкнутых пространств','Был в тюрьме','Знает три языка','Лунатик','Скрывает укус','Тайный миллионер','Храпит','Умеет водить всё']},
+ {name:'Характер',items:['Лидер','Паникёр','Спокойный','Агрессивный','Весельчак','Эгоист','Альтруист','Параноик']}],
+ events:['Сломался генератор — нужен электрик.','В вентиляции обнаружена плесень.','Кто-то тайно съел часть запасов.','К двери бункера стучатся незнакомцы.','Заражение воды: нужен врач или химик.','Связь с поверхностью появилась на минуту.']};
+
+const store={
+ get packs(){try{const p=JSON.parse(localStorage.bk_packs);if(p&&p.length)return p}catch{}return [structuredClone(DEFAULT_PACK)]},
+ set packs(v){localStorage.bk_packs=JSON.stringify(v)}
+};
+let packs=store.packs, selPack=packs[0].id;
+const savePacks=()=>store.packs=packs;
+
+/* ---------- утилиты UI ---------- */
+function toast(m,err){const e=document.createElement('div');e.className='toast'+(err?' err':'');e.textContent=m;$('#toasts').append(e);setTimeout(()=>e.remove(),3500)}
+const seen=new Set();
+const an=(key,cls,extra='')=>{if(seen.has(key))return extra;seen.add(key);return cls+' '+extra};
+const vib=n=>{try{navigator.vibrate&&navigator.vibrate(n)}catch{}};
+
+/* ---------- сеть ---------- */
+let ws,S=null,sess=null,wantOpen=true,retry=0,prev=null,screen='home';
+try{sess=JSON.parse(localStorage.bk_sess)}catch{}
+const send=o=>ws&&ws.readyState===1&&ws.send(JSON.stringify(o));
+function connect(){
+ ws=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host+'/ws');
+ ws.onopen=()=>{retry=0;$('#conn').classList.add('hide');
+  if(sess)send({t:'join',code:sess.code,token:sess.token})};
+ ws.onmessage=e=>{const d=JSON.parse(e.data);
+  if(d.t==='joined'){sess={code:d.code,token:d.token};localStorage.bk_sess=JSON.stringify(sess);history.replaceState(null,'','?room='+d.code)}
+  else if(d.t==='state'){onState(d)}
+  else if(d.t==='error'){toast(d.m,1)}
+  else if(d.t==='nojoin'){toast(d.m,1);if(S||sess){dropSession()}}
+  else if(d.t==='kicked'){toast('Вас убрали из комнаты',1);dropSession()}};
+ ws.onclose=()=>{$('#conn').classList.toggle('hide',!S&&!sess);setTimeout(connect,Math.min(1000*2**retry++,8000))};
+}
+function dropSession(){sess=null;S=null;prev=null;localStorage.removeItem('bk_sess');history.replaceState(null,'',location.pathname);seen.clear();setTab('home')}
+function leave(){if(!confirm('Выйти из комнаты?'))return;send({t:'leave'});dropSession()}
+
+function onState(d){
+ const old=S;S=d;
+ if(!old||old.phase==='lobby'&&d.phase!=='lobby'){seen.clear()}
+ if(old&&(d.phase==='lobby'&&old.phase!=='lobby'||old.phase==='over'&&d.phase==='game'))seen.clear();
+ if(old&&d.phase==='vote'&&old.phase!=='vote'){toast('🗳 Началось голосование!');vib(120)}
+ if(old&&d.event&&d.event!==old.event){toast('⚡ Новое событие');vib(60)}
+ if(old&&d.lastvote&&(!old.lastvote||old.lastvote.n!==d.lastvote.n)){
+  const o=d.lastvote.out;toast(o?'Изгнан: '+(d.players.find(p=>p.id===o)||{}).name:'Ничья — никто не изгнан');vib([80,40,80])}
+ if(old&&d.phase==='over'&&old.phase!=='over')toast('🏁 Игра окончена');
+ if(old&&d.host!==old.host&&d.host===d.you)toast('Вы теперь ведущий');
+ if(view==='app')render();
+}
+
+/* ---------- вкладки ---------- */
+let view='app';
+function setTab(t){view=t==='packs'?'packs':'app';
+ $('#vApp').classList.toggle('hide',view!=='app');$('#vPacks').classList.toggle('hide',view!=='packs');
+ $('#tHome').classList.toggle('on',view==='app');$('#tPacks').classList.toggle('on',view==='packs');
+ view==='app'?render():renderPacks()}
+$('#tHome').onclick=()=>setTab('home');$('#tPacks').onclick=()=>setTab('packs');$('#logo').onclick=()=>setTab('home');
+
+/* ---------- экраны ---------- */
+function render(){
+ const v=$('#vApp'),key=!S?(sess?'wait':'home'):'room';
+ if(key==='home')v.innerHTML=homeHTML(),bindHome();
+ else if(key==='wait')v.innerHTML='<div class="box fade"><h3 class="pulse">Подключаемся к комнате…</h3></div>';
+ else v.innerHTML=roomHTML(),bindRoom();
+}
+
+function homeHTML(){
+ const q=new URLSearchParams(location.search).get('room')||'';
+ return `<div class="box ${an('home','fade')}" style="max-width:520px;margin:20px auto">
+  <h2>Играть онлайн</h2>
+  <label>Ваше имя</label><input type="text" id="hn" maxlength="20" value="${esc(localStorage.bk_name||'')}" placeholder="Например, Аня">
+  <h3 style="margin-top:20px">Создать комнату</h3>
+  <label>Пак</label><select id="hp">${packs.map(p=>`<option value="${p.id}" ${p.id===selPack?'selected':''}>${esc(p.name)}</option>`).join('')}</select>
+  <p><button class="pri big" id="hc" style="width:100%">Создать</button></p>
+  <h3 style="margin-top:20px">Войти по коду</h3>
+  <div class="row"><input type="text" id="hj" maxlength="4" placeholder="КОД" value="${esc(q.toUpperCase())}" style="flex:1;text-transform:uppercase;letter-spacing:6px;font-size:20px;text-align:center">
+  <button class="big" id="hb">Войти</button></div></div>`;
+}
+function bindHome(){
+ const name=()=>{const n=$('#hn').value.trim();if(!n){toast('Введите имя',1);$('#hn').focus();return null}localStorage.bk_name=n;return n};
+ $('#hp').onchange=e=>selPack=e.target.value;
+ $('#hc').onclick=()=>{const n=name();if(!n)return;const p=packs.find(x=>x.id===$('#hp').value);send({t:'create',name:n,pack:p})};
+ const join=()=>{const n=name();if(!n)return;const c=$('#hj').value.trim().toUpperCase();if(c.length<4)return toast('Введите код из 4 символов',1);send({t:'join',code:c,name:n})};
+ $('#hb').onclick=join;$('#hj').onkeydown=e=>e.key==='Enter'&&join();
+}
+
+function roomHTML(){
+ const s=S,me=s.players.find(p=>p.id===s.you),isHost=s.host===s.you;
+ const alive=s.players.filter(p=>!p.out).length;
+ const top=`<div class="box ${an('top','fade')}"><div class="row">
+   <span class="tag">Комната <b id="cc" style="cursor:pointer;color:var(--acc)" title="Скопировать ссылку">${s.code}</b></span>
+   ${s.phase!=='lobby'?`<span class="tag">Раунд ${s.round}</span><span class="tag ${alive<=s.slots?'hl':''}">Живых ${alive} / мест ${s.slots}</span>`:''}
+   <span class="tag">${esc(s.pack.name)}</span>
+   <button class="sp" id="lv">Выйти</button></div>
+   ${s.pack.catastrophe?`<div class="lore ${an('l1','slide')}"><b>Катастрофа:</b> ${esc(s.pack.catastrophe)}</div>`:''}
+   ${s.pack.bunker?`<div class="lore ${an('l2','slide','')}" style="animation-delay:.12s"><b>Бункер:</b> ${esc(s.pack.bunker)}</div>`:''}
+   ${s.event?`<div class="ev ${an('ev'+s.round+s.event,'slide')}">⚡ ${esc(s.event)}</div>`:''}</div>`;
+ if(s.phase==='lobby')return top+lobbyHTML(s,isHost);
+ let h=top;
+ if(s.phase==='over'){
+  const surv=s.players.filter(p=>!p.out).map(p=>esc(p.name)).join(', ');
+  h+=`<div class="ev win ${an('over','pop','glow')}"><b>🏁 Бункер закрыт.</b> Выжили: ${surv||'никто'}</div>`}
+ if(s.lastvote)h+=voteResultHTML(s);
+ if(s.phase==='vote')h+=`<div class="ev ${an('vt'+s.round,'pop')}">🗳 Голосование: проголосовало ${s.players.filter(p=>!p.out&&p.voted).length} из ${alive}. ${me.out?'Вы изгнаны — голосовать нельзя.':s.myvote?'Ваш голос принят, можно переголосовать.':'Выберите, кого изгнать.'}</div>`;
+ const order=[me,...s.players.filter(p=>p!==me)];
+ h+=`<div class="grid" style="margin-top:14px">${order.map((p,i)=>cardHTML(s,p,i,p===me)).join('')}</div>`;
+ return h+dockHTML(s,isHost);
+}
+
+function lobbyHTML(s,isHost){
+ const n=s.players.length;
+ return `<div class="box ${an('lobby','fade')}"><h2>Ждём игроков <span class="tag">${n}</span></h2>
+  <p style="color:var(--mut)">Отправьте друзьям код <span class="code" id="cc2">${s.code}</span> или нажмите на него, чтобы скопировать ссылку.</p>
+  ${s.players.map((p,i)=>`<div class="pl ${an('pl'+p.id,'pop')}" style="--i:${i}"><span class="dot ${p.online?'':'off'}"></span>${esc(p.name)}
+   ${p.id===s.host?'<span class="tag hl">ведущий</span>':''}${p.id===s.you?'<span class="tag">вы</span>':''}
+   ${isHost&&p.id!==s.you?`<button class="sp dng" data-rm="${p.id}">убрать</button>`:''}</div>`).join('')}
+  ${isHost?`<div class="row" style="margin-top:14px"><span>Мест в бункере:</span>
+   <button id="sm">−</button><b style="min-width:24px;text-align:center">${s.slots}</b><button id="sp">+</button>
+   <button class="pri big sp" id="st" ${n<2?'disabled':''}>Начать игру</button></div>`
+  :'<p class="pulse" style="color:var(--mut)">Ведущий скоро начнёт игру…</p>'}</div>`;
+}
+
+function cardHTML(s,p,i,mine){
+ const voting=s.phase==='vote',me=s.players.find(x=>x.id===s.you);
+ const outAnim=p.out?an('out'+p.id,'shake'):'';
+ const stamp=p.out?`<div class="stamp ${an('st'+p.id,'stampin')}">ИЗГНАН</div>`:'';
+ const attrs=p.attrs.map((a,ai)=>{
+  const open=a.val!==null,pub=a.open;
+  const flipc=pub?an(`f${p.id}${ai}`,'flip'):'';
+  const val=open?esc(a.val):'скрыто';
+  let right=`<span class="v">${open?val:'●●●●'}</span>`;
+  if(mine&&!pub&&!p.out)right=`<span class="v">${val}</span><button class="eye" data-rv="${ai}">Открыть</button>`;
+  return `<div class="attr ${open?'':'hid'} ${mine?'mine':''} ${pub&&mine?'opened':''} ${flipc}"><small>${esc(a.cat)}</small><div class="row" style="gap:6px;flex-wrap:nowrap;justify-content:flex-end">${right}</div></div>`}).join('');
+ const vb=voting&&!p.out&&!mine&&!me.out?`<button class="vbtn ${s.myvote===p.id?'sel':''}" data-v="${p.id}">${s.myvote===p.id?'✔ Ваш голос':'Изгнать'}</button>`:'';
+ const done=voting&&!p.out&&p.voted?'<span class="tag">проголосовал</span>':'';
+ return `<div class="card ${mine?'me':''} ${p.out?'out':''} ${an('card'+p.id,'pop')} ${outAnim}" style="--i:${i}">
+  <div class="nm"><span class="dot ${p.online?'':'off'}"></span>${esc(p.name)}${mine?'<span class="tag">вы</span>':''}${p.id===s.host?'<span class="tag hl">вед.</span>':''}<span class="sp">${done}</span></div>
+  ${attrs}${vb}${stamp}</div>`;
+}
+
+function voteResultHTML(s){
+ const lv=s.lastvote,ents=Object.entries(lv.tally).sort((a,b)=>b[1]-a[1]),max=Math.max(1,...ents.map(e=>e[1]));
+ const nm=id=>esc((s.players.find(p=>p.id===id)||{name:'?'}).name);
+ return `<div class="box ${an('lv'+lv.n,'pop')}"><h3>Итоги голосования</h3>
+  ${ents.map(([id,c])=>`<div class="bar"><i style="width:${c/max*100}%"></i><span>${nm(id)} — ${c}</span></div>`).join('')||'<p>Никто не голосовал.</p>'}
+  <p><b>${lv.out?'Изгнан: '+nm(lv.out):'Ничья — никто не изгнан'}</b></p></div>`;
+}
+
+function dockHTML(s,isHost){
+ if(!isHost)return '';
+ const g=s.phase==='game',v=s.phase==='vote';
+ return `<div class="dock fade">
+  ${g?`<button class="pri" id="d-vote">🗳 Голосование</button><button id="d-round">Следующий раунд</button>`:''}
+  ${v?`<button class="pri" id="d-end">Завершить голосование</button>`:''}
+  ${(g||v)&&s.hasEvents?'<button id="d-ev">⚡ Событие</button>':''}
+  ${s.phase!=='over'?'<button id="d-all">Открыть всё</button>':''}
+  ${s.phase==='over'?'<button class="pri" id="d-new">Новая игра</button>':''}
+  <button class="dng" id="d-out">Изгнать вручную</button>
+  ${s.phase!=='lobby'?'<button id="d-lobby">В лобби</button>':''}</div>`;
+}
+
+function bindRoom(){
+ const s=S,go=(t,x={})=>send({t,...x}),$$=(sel,fn)=>document.querySelectorAll(sel).forEach(fn);
+ const copy=()=>{const u=location.origin+location.pathname+'?room='+s.code;(navigator.clipboard?navigator.clipboard.writeText(u):Promise.reject()).then(()=>toast('Ссылка скопирована'),()=>toast('Код: '+s.code))};
+ ['#cc','#cc2'].forEach(i=>{const e=$(i);if(e)e.onclick=copy});
+ $('#lv').onclick=leave;
+ $$('[data-rm]',e=>e.onclick=()=>go('remove',{p:e.dataset.rm}));
+ $$('[data-rv]',e=>e.onclick=()=>go('reveal',{i:+e.dataset.rv}));
+ $$('[data-v]',e=>e.onclick=()=>go('vote',{p:e.dataset.v}));
+ const b=(id,fn)=>{const e=$(id);if(e)e.onclick=fn};
+ b('#sm',()=>go('slots',{v:s.slots-1}));b('#sp',()=>go('slots',{v:s.slots+1}));
+ b('#st',()=>go('start',{slots:s.slots}));
+ b('#d-vote',()=>go('startvote'));b('#d-round',()=>go('round'));b('#d-end',()=>go('endvote'));
+ b('#d-ev',()=>go('event'));b('#d-all',()=>go('revealall'));b('#d-new',()=>go('start',{slots:s.slots}));
+ b('#d-lobby',()=>confirm('Вернуться в лобби? Карточки сбросятся.')&&go('lobby'));
+ b('#d-out',()=>{const list=s.players.map((p,i)=>`${i+1}. ${p.name}${p.out?' (изгнан)':''}`).join('\n');
+  const n=+prompt('Номер игрока, чтобы изгнать/вернуть:\n'+list);if(n>=1&&n<=s.players.length)go('toggleout',{p:s.players[n-1].id})});
+}
+
+/* ---------- РЕДАКТОР ПАКОВ ---------- */
+function renderPacks(){
+ const v=$('#vPacks'),p=packs.find(x=>x.id===selPack)||packs[0];selPack=p.id;
+ v.innerHTML=`<div class="packs fade"><div><div class="box">${packs.map(x=>`<div class="pk ${x.id===p.id?'sel':''}" data-p="${x.id}">${esc(x.name)}</div>`).join('')}
+  <div class="row" style="margin-top:8px"><button class="pri" id="np">+ Новый</button><button id="dp">Копия</button><button id="ip">Импорт</button></div>
+  <input type="file" id="fi" accept=".json" class="hide"></div></div>
+  <div class="box"><div class="row"><h2 style="margin:0">Редактор пака</h2><button class="sp" id="xp">Экспорт JSON</button><button class="dng" id="rp">Удалить</button></div>
+  <label>Название</label><input type="text" id="pn" value="${esc(p.name)}">
+  <label>Лор катастрофы (что случилось с миром)</label><textarea id="pc">${esc(p.catastrophe)}</textarea>
+  <label>Лор бункера (где и как живут)</label><textarea id="pb">${esc(p.bunker)}</textarea>
+  <h3 style="margin-top:18px">Категории карточек</h3>
+  <small style="color:var(--mut)">Каждый игрок получает по одному случайному варианту из каждой категории. Варианты — по одному в строке. До 12 категорий, до 200 вариантов.</small>
+  ${p.categories.map((c,i)=>`<div class="cat"><div class="row"><input type="text" data-cn="${i}" value="${esc(c.name)}" style="flex:1"><button class="dng" data-cd="${i}">✕</button></div>
+   <textarea data-ci="${i}" placeholder="Один вариант в строке">${esc(c.items.join('\n'))}</textarea></div>`).join('')}
+  <button id="ac">+ Категория</button>
+  <h3 style="margin-top:18px">События</h3><small style="color:var(--mut)">Ведущий запускает случайное событие кнопкой. По одному в строке.</small>
+  <textarea id="pe">${esc((p.events||[]).join('\n'))}</textarea></div></div>`;
+ const upd=()=>{p.name=$('#pn').value||'Без названия';p.catastrophe=$('#pc').value;p.bunker=$('#pb').value;
+  v.querySelectorAll('[data-cn]').forEach(e=>p.categories[e.dataset.cn].name=e.value);
+  v.querySelectorAll('[data-ci]').forEach(e=>p.categories[e.dataset.ci].items=lines(e.value));
+  p.events=lines($('#pe').value);savePacks()};
+ v.querySelectorAll('input[type=text],textarea').forEach(e=>e.oninput=upd);
+ $('#pn').addEventListener('change',renderPacks);
+ v.querySelectorAll('[data-p]').forEach(e=>e.onclick=()=>{selPack=e.dataset.p;renderPacks()});
+ v.querySelectorAll('[data-cd]').forEach(e=>e.onclick=()=>{upd();p.categories.splice(e.dataset.cd,1);savePacks();renderPacks()});
+ $('#ac').onclick=()=>{upd();p.categories.push({name:'Новая категория',items:[]});savePacks();renderPacks()};
+ $('#np').onclick=()=>{const n={id:uid(),name:'Мой пак',catastrophe:'',bunker:'',categories:[{name:'Профессия',items:[]},{name:'Здоровье',items:[]}],events:[]};packs.push(n);selPack=n.id;savePacks();renderPacks()};
+ $('#dp').onclick=()=>{upd();const n=structuredClone(p);n.id=uid();n.name+=' (копия)';packs.push(n);selPack=n.id;savePacks();renderPacks()};
+ $('#rp').onclick=()=>{if(!confirm('Удалить пак «'+p.name+'»?'))return;packs=packs.filter(x=>x!==p);if(!packs.length)packs=[structuredClone(DEFAULT_PACK)];selPack=packs[0].id;savePacks();renderPacks()};
+ $('#xp').onclick=()=>{upd();const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(p,null,2)],{type:'application/json'}));a.download=p.name+'.json';a.click()};
+ $('#ip').onclick=()=>$('#fi').click();
+ $('#fi').onchange=async e=>{try{const d=JSON.parse(await e.target.files[0].text());
+  if(!Array.isArray(d.categories))throw 0;d.id=uid();d.events=d.events||[];d.catastrophe=d.catastrophe||'';d.bunker=d.bunker||'';packs.push(d);selPack=d.id;savePacks();renderPacks()}catch{toast('Неверный файл пака',1)}};
+}
+
+connect();render();
+</script>
+</body>
+</html>
