@@ -65,6 +65,11 @@ h2,h3{margin:0 0 8px}
 .pk:hover{transform:translateX(4px)}.pk.sel{outline:2px solid var(--acc)}
 .cat{background:var(--panel2);border-radius:8px;padding:10px;margin:10px 0}
 .hide{display:none!important}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.chip{background:var(--panel2);border:1px solid #3a414c;border-radius:10px;padding:5px 11px;font-size:14px}
+.chip b{color:var(--acc)}
+#modal{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:60;display:flex;align-items:center;justify-content:center;padding:16px}
+#modal .box{width:100%;max-width:480px;max-height:92vh;overflow:auto;margin:0}
 #toasts{position:fixed;top:60px;left:50%;transform:translateX(-50%);z-index:50;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
 .toast{background:#0b0d10;border:1px solid var(--acc);border-radius:10px;padding:9px 16px;animation:toast 3.4s ease both;max-width:92vw}
 .toast.err{border-color:var(--red)}
@@ -99,7 +104,7 @@ h2,h3{margin:0 0 8px}
   <button id="tPacks">Паки</button>
 </header>
 <div id="conn" class="conn hide">нет связи…</div>
-<div id="toasts"></div>
+<div id="toasts"></div><div id="modal" class="hide"></div>
 <main><section id="vApp"></section><section id="vPacks" class="hide"></section></main>
 
 <script>
@@ -119,6 +124,7 @@ const DEFAULT_PACK={id:'default',name:'Классика: Ядерная зима
  {name:'Багаж',items:['Аптечка','Набор инструментов','Семена растений','Рация','Ящик консервов','Ружьё','Книга по выживанию','Колода карт']},
  {name:'Факт',items:['Боится замкнутых пространств','Был в тюрьме','Знает три языка','Лунатик','Скрывает укус','Тайный миллионер','Храпит','Умеет водить всё']},
  {name:'Характер',items:['Лидер','Паникёр','Спокойный','Агрессивный','Весельчак','Эгоист','Альтруист','Параноик']}],
+ info:{size:'60 м²',time:'2 года',food:'на 2 года (гречка, тушёнка)',water:'500 литров + фильтр',items:['Генератор','Аптечка','Рация']},
  events:['Сломался генератор — нужен электрик.','В вентиляции обнаружена плесень.','Кто-то тайно съел часть запасов.','К двери бункера стучатся незнакомцы.','Заражение воды: нужен врач или химик.','Связь с поверхностью появилась на минуту.']};
 
 const store={
@@ -212,6 +218,7 @@ function roomHTML(){
    <button class="sp" id="lv">Выйти</button></div>
    ${s.pack.catastrophe?`<div class="lore ${an('l1','slide')}"><b>Катастрофа:</b> ${esc(s.pack.catastrophe)}</div>`:''}
    ${s.pack.bunker?`<div class="lore ${an('l2','slide','')}" style="animation-delay:.12s"><b>Бункер:</b> ${esc(s.pack.bunker)}</div>`:''}
+   ${chipsHTML(s)}
    ${s.event?`<div class="ev ${an('ev'+s.round+s.event,'slide')}">⚡ ${esc(s.event)}</div>`:''}</div>`;
  if(s.phase==='lobby')return top+lobbyHTML(s,isHost);
  let h=top;
@@ -225,14 +232,35 @@ function roomHTML(){
  return h+dockHTML(s,isHost);
 }
 
+function chipsHTML(s){
+ const i=s.info||{},host=s.host===s.you;
+ const ch=[['📐','Размер',i.size],['⏳','Срок',i.time],['🍞','Еда',i.food],['💧','Вода',i.water]].filter(x=>x[2]).map(x=>`<span class="chip">${x[0]} ${x[1]}: <b>${esc(x[2])}</b></span>`);
+ if((i.items||[]).length)ch.push(`<span class="chip">🧰 В бункере: <b>${i.items.map(esc).join(', ')}</b></span>`);
+ if(!ch.length&&!host)return '';
+ return `<div class="chips ${an('chips','fade')}">${ch.join('')||'<span class="chip">Характеристики бункера не заданы</span>'}${host?'<button id="ei">🛠 Изменить бункер</button>':''}</div>`;
+}
+function infoModal(){
+ const i=S.info||{},m=$('#modal');
+ m.innerHTML=`<div class="box fade"><h3>Характеристики бункера</h3>
+  <label>Размер</label><input type="text" id="i1" maxlength="60" value="${esc(i.size)}" placeholder="например, 60 м²">
+  <label>Время нахождения</label><input type="text" id="i2" maxlength="60" value="${esc(i.time)}" placeholder="например, 2 года">
+  <label>Еда</label><input type="text" id="i3" maxlength="60" value="${esc(i.food)}" placeholder="например, на 1 год">
+  <label>Вода</label><input type="text" id="i4" maxlength="60" value="${esc(i.water)}" placeholder="например, 500 литров">
+  <label>Дополнительные вещи (по одной в строке)</label><textarea id="i5">${esc((i.items||[]).join('\n'))}</textarea>
+  <div class="row" style="margin-top:12px"><button class="pri" id="is">Сохранить</button><button id="ic">Отмена</button></div></div>`;
+ m.classList.remove('hide');
+ $('#ic').onclick=()=>m.classList.add('hide');
+ $('#is').onclick=()=>{send({t:'setinfo',info:{size:$('#i1').value,time:$('#i2').value,food:$('#i3').value,water:$('#i4').value,items:lines($('#i5').value)}});m.classList.add('hide');toast('Бункер обновлён')};
+}
 function lobbyHTML(s,isHost){
  const n=s.players.length;
  return `<div class="box ${an('lobby','fade')}"><h2>Ждём игроков <span class="tag">${n}</span></h2>
   <p style="color:var(--mut)">Отправьте друзьям код <span class="code" id="cc2">${s.code}</span> или нажмите на него, чтобы скопировать ссылку.</p>
-  ${s.players.map((p,i)=>`<div class="pl ${an('pl'+p.id,'pop')}" style="--i:${i}"><span class="dot ${p.online?'':'off'}"></span>${esc(p.name)}
+  ${s.players.map((p,i)=>`<div class="pl ${an('pl'+p.id,'pop')}" style="--i:${i}"><span class="dot ${p.online?'':'off'}"></span>${p.bot?'🤖 ':''}${esc(p.name)}
    ${p.id===s.host?'<span class="tag hl">ведущий</span>':''}${p.id===s.you?'<span class="tag">вы</span>':''}
    ${isHost&&p.id!==s.you?`<button class="sp dng" data-rm="${p.id}">убрать</button>`:''}</div>`).join('')}
-  ${isHost?`<div class="row" style="margin-top:14px"><span>Мест в бункере:</span>
+  ${isHost?`<div class="row" style="margin-top:14px"><button id="ab" title="Для теста: бот сам открывает карточки и голосует">🤖 + Бот</button><button id="ab3">+3</button></div>
+   <div class="row" style="margin-top:10px"><span>Мест в бункере:</span>
    <button id="sm">−</button><b style="min-width:24px;text-align:center">${s.slots}</b><button id="sp">+</button>
    <button class="pri big sp" id="st" ${n<2?'disabled':''}>Начать игру</button></div>`
   :'<p class="pulse" style="color:var(--mut)">Ведущий скоро начнёт игру…</p>'}</div>`;
@@ -252,7 +280,7 @@ function cardHTML(s,p,i,mine){
  const vb=voting&&!p.out&&!mine&&!me.out?`<button class="vbtn ${s.myvote===p.id?'sel':''}" data-v="${p.id}">${s.myvote===p.id?'✔ Ваш голос':'Изгнать'}</button>`:'';
  const done=voting&&!p.out&&p.voted?'<span class="tag">проголосовал</span>':'';
  return `<div class="card ${mine?'me':''} ${p.out?'out':''} ${an('card'+p.id,'pop')} ${outAnim}" style="--i:${i}">
-  <div class="nm"><span class="dot ${p.online?'':'off'}"></span>${esc(p.name)}${mine?'<span class="tag">вы</span>':''}${p.id===s.host?'<span class="tag hl">вед.</span>':''}<span class="sp">${done}</span></div>
+  <div class="nm"><span class="dot ${p.online?'':'off'}"></span>${p.bot?'🤖 ':''}${esc(p.name)}${mine?'<span class="tag">вы</span>':''}${p.id===s.host?'<span class="tag hl">вед.</span>':''}<span class="sp">${done}</span></div>
   ${attrs}${vb}${stamp}</div>`;
 }
 
@@ -282,12 +310,14 @@ function bindRoom(){
  const copy=()=>{const u=location.origin+location.pathname+'?room='+s.code;(navigator.clipboard?navigator.clipboard.writeText(u):Promise.reject()).then(()=>toast('Ссылка скопирована'),()=>toast('Код: '+s.code))};
  ['#cc','#cc2'].forEach(i=>{const e=$(i);if(e)e.onclick=copy});
  $('#lv').onclick=leave;
+ const ei=$('#ei');if(ei)ei.onclick=infoModal;
  $$('[data-rm]',e=>e.onclick=()=>go('remove',{p:e.dataset.rm}));
  $$('[data-rv]',e=>e.onclick=()=>go('reveal',{i:+e.dataset.rv}));
  $$('[data-v]',e=>e.onclick=()=>go('vote',{p:e.dataset.v}));
  const b=(id,fn)=>{const e=$(id);if(e)e.onclick=fn};
  b('#sm',()=>go('slots',{v:s.slots-1}));b('#sp',()=>go('slots',{v:s.slots+1}));
  b('#st',()=>go('start',{slots:s.slots}));
+ b('#ab',()=>go('addbot'));b('#ab3',()=>{for(let i=0;i<3;i++)go('addbot')});
  b('#d-vote',()=>go('startvote'));b('#d-round',()=>go('round'));b('#d-end',()=>go('endvote'));
  b('#d-ev',()=>go('event'));b('#d-all',()=>go('revealall'));b('#d-new',()=>go('start',{slots:s.slots}));
  b('#d-lobby',()=>confirm('Вернуться в лобби? Карточки сбросятся.')&&go('lobby'));
@@ -305,6 +335,10 @@ function renderPacks(){
   <label>Название</label><input type="text" id="pn" value="${esc(p.name)}">
   <label>Лор катастрофы (что случилось с миром)</label><textarea id="pc">${esc(p.catastrophe)}</textarea>
   <label>Лор бункера (где и как живут)</label><textarea id="pb">${esc(p.bunker)}</textarea>
+  <h3 style="margin-top:18px">Характеристики бункера</h3>
+  <small style="color:var(--mut)">Стартовые значения. Ведущий сможет поменять их в комнате.</small>
+  <div class="row" style="margin-top:6px">${[['size','Размер'],['time','Время нахождения'],['food','Еда'],['water','Вода']].map(([k,l])=>`<div style="flex:1;min-width:160px"><label>${l}</label><input type="text" data-in="${k}" value="${esc((p.info||{})[k])}"></div>`).join('')}</div>
+  <label>Дополнительные вещи в бункере (по одной в строке)</label><textarea id="pi">${esc(((p.info||{}).items||[]).join('\n'))}</textarea>
   <h3 style="margin-top:18px">Категории карточек</h3>
   <small style="color:var(--mut)">Каждый игрок получает по одному случайному варианту из каждой категории. Варианты — по одному в строке. До 12 категорий, до 200 вариантов.</small>
   ${p.categories.map((c,i)=>`<div class="cat"><div class="row"><input type="text" data-cn="${i}" value="${esc(c.name)}" style="flex:1"><button class="dng" data-cd="${i}">✕</button></div>
@@ -315,7 +349,8 @@ function renderPacks(){
  const upd=()=>{p.name=$('#pn').value||'Без названия';p.catastrophe=$('#pc').value;p.bunker=$('#pb').value;
   v.querySelectorAll('[data-cn]').forEach(e=>p.categories[e.dataset.cn].name=e.value);
   v.querySelectorAll('[data-ci]').forEach(e=>p.categories[e.dataset.ci].items=lines(e.value));
-  p.events=lines($('#pe').value);savePacks()};
+  p.events=lines($('#pe').value);
+  p.info=p.info||{};v.querySelectorAll('[data-in]').forEach(e=>p.info[e.dataset.in]=e.value);p.info.items=lines($('#pi').value);savePacks()};
  v.querySelectorAll('input[type=text],textarea').forEach(e=>e.oninput=upd);
  $('#pn').addEventListener('change',renderPacks);
  v.querySelectorAll('[data-p]').forEach(e=>e.onclick=()=>{selPack=e.dataset.p;renderPacks()});

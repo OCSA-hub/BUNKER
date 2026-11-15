@@ -25,8 +25,16 @@ def clean_pack(p):
         'catastrophe': clip(p.get('catastrophe'), 1500),
         'bunker': clip(p.get('bunker'), 1500),
         'categories': cats,
+        'info': clean_info(p.get('info')),
         'events': [clip(e, 300) for e in (p.get('events') or [])[:100] if clip(e, 300)],
     }
+
+
+def clean_info(i):
+    i = i if isinstance(i, dict) else {}
+    return {'size': clip(i.get('size'), 60), 'time': clip(i.get('time'), 60), 'food': clip(i.get('food'), 60),
+            'water': clip(i.get('water'), 60),
+            'items': [clip(x, 100) for x in (i.get('items') or [])[:30] if clip(x, 100)]}
 
 
 def new_code():
@@ -66,13 +74,14 @@ def view(room, me):
             for a in p['attrs']:
                 show = a['open'] or p is me or room['phase'] == 'over'
                 attrs.append({'cat': a['cat'], 'open': a['open'], 'val': a['val'] if show else None})
-        players.append({'id': p['id'], 'name': p['name'], 'out': p['out'], 'online': p['ws'] is not None,
+        players.append({'id': p['id'], 'name': p['name'], 'out': p['out'], 'online': p['ws'] is not None or p.get('bot', False), 'bot': p.get('bot', False),
                         'voted': p['vote'] is not None, 'attrs': attrs})
     pk = room['pack']
     return {'t': 'state', 'code': room['code'], 'phase': room['phase'], 'you': me['id'], 'host': room['host'],
             'slots': room['slots'], 'round': room['round'], 'event': room['event'], 'lastvote': room['lastvote'],
             'myvote': me['vote'], 'hasEvents': bool(pk['events']),
             'pack': {'name': pk['name'], 'catastrophe': pk['catastrophe'], 'bunker': pk['bunker']},
+            'info': room['info'],
             'players': players}
 
 
@@ -118,6 +127,27 @@ def finish_vote(room):
     check_over(room)
 
 
+BOT_NAMES = ['Бот Гена', 'Бот Зина', 'Бот Витя', 'Бот Люся', 'Бот Борис', 'Бот Клава', 'Бот Семён', 'Бот Тамара',
+             'Бот Игнатьич', 'Бот Валера', 'Бот Нинель', 'Бот Колян']
+
+
+def bots_reveal(room):
+    for p in room['players'].values():
+        if p.get('bot') and not p['out']:
+            closed = [a for a in p['attrs'] if not a['open']]
+            if closed:
+                random.choice(closed)['open'] = True
+
+
+def bots_vote(room):
+    al = alive(room)
+    for p in al:
+        if p.get('bot'):
+            others = [q for q in al if q is not p]
+            if others:
+                p['vote'] = random.choice(others)['id']
+
+
 def host_failover(room, pid):
     async def later():
         await asyncio.sleep(45)
@@ -147,24 +177,36 @@ async def handle(room, me, d):
             if all(p['vote'] for p in alive(room) if p['ws'] is not None):
                 finish_vote(room)
     elif is_host:
-        if t == 'start' and ph in ('lobby', 'over'):
+        if t == 'addbot' and ph == 'lobby':
+            if len(room['players']) < MAX_PLAYERS:
+                used = {p['name'] for p in room['players'].values()}
+                free = [n for n in BOT_NAMES if n not in used] or [f'Бот {len(room["players"])}']
+                bid = secrets.token_hex(4)
+                room['players'][bid] = {'id': bid, 'token': secrets.token_hex(16), 'name': random.choice(free), 'ws': None,
+                                        'out': False, 'attrs': [], 'vote': None, 'bot': True}
+        elif t == 'start' and ph in ('lobby', 'over'):
             n = len(room['players'])
             if n < 2:
                 return await send(me, {'t': 'error', 'm': 'Нужно минимум 2 игрока'})
             room['slots'] = max(1, min(int(d.get('slots') or room['slots']), n - 1))
             deal(room)
             room.update(phase='game', round=1, event='', lastvote=None)
+            bots_reveal(room)
+        elif t == 'setinfo':
+            room['info'] = clean_info(d.get('info'))
         elif t == 'slots' and ph == 'lobby':
             room['slots'] = max(1, min(int(d.get('v') or 1), max(1, len(room['players']) - 1)))
         elif t == 'event' and ph in ('game', 'vote') and room['pack']['events']:
             room['event'] = random.choice(room['pack']['events'])
         elif t == 'round' and ph == 'game':
             room.update(round=room['round'] + 1, event='', lastvote=None)
+            bots_reveal(room)
         elif t == 'startvote' and ph == 'game':
             room['phase'] = 'vote'
             room['lastvote'] = None
             for p in room['players'].values():
                 p['vote'] = None
+            bots_vote(room)
         elif t == 'endvote' and ph == 'vote':
             finish_vote(room)
         elif t == 'toggleout' and ph in ('game', 'vote', 'over'):
@@ -211,7 +253,7 @@ async def ws_handler(req):
                         if not name:
                             raise ValueError('Введите имя')
                         code = new_code()
-                        room = ROOMS[code] = {'code': code, 'players': {}, 'phase': 'lobby', 'pack': clean_pack(d.get('pack') or {}),
+                        room = ROOMS[code] = {'code': code, 'players': {}, 'phase': 'lobby', 'pack': clean_pack(d.get('pack') or {}), 'info': None,
                                               'slots': 1, 'round': 1, 'event': '', 'lastvote': None, 'lastvote_n': 0,
                                               'host': None, 'touched': time.time()}
                     elif t == 'join':
@@ -238,6 +280,8 @@ async def ws_handler(req):
                                 continue
                     else:
                         continue
+                    if room['info'] is None:
+                        room['info'] = dict(room['pack']['info'])
                     if me is None:
                         base, n = name, 2
                         while any(p['name'].lower() == name.lower() for p in room['players'].values()):
